@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Draw a digit</title>
+    <script src="https://kit.fontawesome.com/e216da007f.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <main>
+        <h2>Draw a single digit</h2>
+        <canvas id="draw"></canvas>
+        <div class="buttons">
+            <button id="guess">Analyse</button>
+            <button id="clear"><i class="fa-solid fa-trash"></i></button>
+        </div>
+    </main>
+</body>
+<script type="text/javascript" defer>
+    let low_data = '2111111211111111111111111111111111111121111111111111111111111111111111111111111111101111111111111111111011111111211111111111101122111111111111111111101111122267821111111111111111101111474358111111111111111110111472112841111121111212101111374111255111111111111111111158211114711111111111112111117611111671111111111111111111751111155111112111111211111372121127411211111111112110148211113821111111111112111113821112751111120111111111111382111382111111111111112111127611385111111111111111111111586686111112111111111121110023553112111111211111111111111111110211111111101111211101111111111211111111111111110011111111111111111111111101111111110101011112111101110010101110011111111111111211010111111111111111111111111111111111111111111011111111111101111111121111111111111111111111111112111111'
+    //let low_data = '000000051f83dfa120000000000000081fd5f2f2b5fbdc1b0000000055d1d95d000005c6fe31000000003e5d00647e198efefe310000000000000057f5fefefefe31000000000000000060fefefef32a00000000000000002af2fefeb30000000000000000000ac3fefee72200000000000000004efef1d5fe9b0a0000000000002ac2fe6513b7fe86000000000000a8feef320013d9e93e0000000043ecf05000000055f2ea1800001aedfecc0000000000acfe4600004bfeef4a000000000058febd090ac0fea500000000000058feda1087fefe57000000000020d6fe6a0095ffdc09000000516bd6fed7120095fefc511771ccfafefea11d000013d1fef7f5fefefea1610200000000045582d7a62706020000000000'
+    function chunks(table, size) {
+        return Array.from({ length: Math.ceil(table.length / size) }).map((_, i) => table.slice(size * i, size * (i + 1)))
+    }
+    low_data = chunks(chunks(low_data.split(''), 2).map(a => parseInt(a.join(''), 16)), 14)
+    window.onload = function () {
+        console.log('Hey lo')
+        const button = document.getElementById('guess')
+        const trash = document.getElementById('clear')
+        const canvas = document.getElementById('draw');
+        const ctx = canvas.getContext('2d');
+
+        const size = 448
+        const ratio = size / 300
+
+        const canvasOffsetX = canvas.offsetLeft;
+        const canvasOffsetY = canvas.offsetTop;
+
+        canvas.width = size;
+        canvas.height = size;
+
+        console.log(canvas.width, canvas.height)
+
+        let isPainting = false;
+        let lineWidth = 32;
+        let startX;
+        let startY;
+
+        const draw = (e) => {
+            if (!isPainting) {
+                return;
+            }
+
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+
+            const X = (e.targetTouches?.[0] || e).clientX;
+            const Y = (e.targetTouches?.[0] || e).clientY;
+
+            ctx.lineTo(
+                (X - canvasOffsetX) * ratio,
+                (Y - canvasOffsetY) * ratio
+            );
+            ctx.stroke();
+        }
+
+            ;['mousedown', 'touchstart'].map(a => canvas.addEventListener(a, (e) => {
+                isPainting = true;
+
+                startX = (e.targetTouches?.[0] || e).clientX;
+                startY = (e.targetTouches?.[0] || e).clientY;
+            }))
+
+            ;['mouseup', 'touchend', 'touchcancel'].map(a => canvas.addEventListener(a, (e) => {
+                isPainting = false;
+                ctx.stroke();
+                ctx.beginPath();
+            }))
+
+            ;['mousemove', 'touchmove', 'touchcancel'].map(a => canvas.addEventListener(a, draw))
+
+            function distance(x, y, ax, ay) {
+                return Math.sqrt((ax - x) ** 2 + (ay - y) ** 2)
+            }
+            function linear_interpolation(data, up_factor_x = 16, up_factor_y = 16) {
+                const up_length = Math.ceil(data.length * data[0].length * up_factor_x * up_factor_y)
+                const max_distance = Math.sqrt(up_factor_x ** 2 + up_factor_x ** 2)
+                const arr_Up = new Array(up_length).fill(0)
+                const y = up_factor_y
+                const x = up_factor_x
+                for (let i = 0; i < up_length; i++) {
+                    const i2 = data[0].length * up_factor_x
+                    const w = Math.floor(i / i2)
+                    const j = i % i2
+
+                    if(undefined == (data[Math.floor(w / up_factor_y)] ?? data[Math.floor(w / up_factor_y) - y] ?? data[Math.floor(w / up_factor_y) - y - 1])){
+                        console.log('A',i, Math.floor(w / up_factor_y), Math.floor(w / up_factor_y) - y, Math.floor(w / up_factor_y) - y - 1)
+                        console.log(data.length, data[0].length, data.length * data[0].length * up_factor_x * up_factor_y, up_length, up_factor_x, up_factor_y)
+                    }
+                    const points = [
+                        {
+                            x: Math.floor(j / up_factor_x) * up_factor_x,
+                            y: Math.floor(w / up_factor_y) * up_factor_y,
+                            value: (data[Math.floor(w / up_factor_y)] ?? data[Math.floor(w / up_factor_y) - y] ?? data[Math.floor(w / up_factor_y) - y - 1])[Math.floor(j / up_factor_x)] ??
+                                (data[Math.floor(w / up_factor_y)] ?? data[Math.floor(w / up_factor_y) - y] ?? data[Math.floor(w / up_factor_y) - y - 1])[Math.floor(j / up_factor_x) - x - 1]
+                        },
+                        {
+                            x: Math.ceil(j / up_factor_x) * up_factor_x,
+                            y: Math.floor(w / up_factor_y) * up_factor_y,
+                            value: (data[Math.floor(w / up_factor_y)] ?? data[Math.floor(w / up_factor_y) - y] ?? data[Math.floor(w / up_factor_y) - y - 1])[Math.ceil(j / up_factor_x)] ??
+                                (data[Math.floor(w / up_factor_y)] ?? data[Math.floor(w / up_factor_y) - x - 1])[Math.ceil(j / up_factor_x) - x - 1]
+                        },
+                        {
+                            x: Math.floor(j / up_factor_x) * up_factor_x,
+                            y: Math.ceil(w / up_factor_y) * up_factor_y,
+                            value: (data[Math.ceil(w / up_factor_y)] ?? data[Math.floor(w / up_factor_y)] ?? data[Math.floor(w / up_factor_y) - y] ?? data[Math.floor(w / up_factor_y) - y - 1])[Math.floor(j / up_factor_x)] ??
+                            (data[Math.ceil(w / up_factor_y)] ?? data[Math.floor(w / up_factor_y)] ?? data[Math.floor(w / up_factor_y) - y] ?? data[Math.floor(w / up_factor_y) - y - 1])[Math.floor(j / up_factor_x) - x - 1]
+                        },
+                        {
+                            x: Math.ceil(j / up_factor_x) * up_factor_x,
+                            y: Math.ceil(w / up_factor_y) * up_factor_y,
+                            value: (data[Math.ceil(w / up_factor_y)] ?? data[Math.floor(w / up_factor_y)] ?? data[Math.ceil(w / up_factor_y) - y - 1] ?? data[Math.floor(w / up_factor_y) - y - 1])[Math.ceil(j / up_factor_x)] ??
+                                (data[Math.ceil(w / up_factor_y)] ?? data[Math.floor(w / up_factor_y)] ?? data[Math.ceil(w / up_factor_y) - y - 1] ?? data[Math.floor(w / up_factor_y) - y - 1])[Math.ceil(j / up_factor_x) - x - 1]
+                        },
+                    ]
+                    points.forEach(a => a.coeff = max_distance - distance(j, w, a.x, a.y))
+
+                    const total_coeffs = points.reduce((acc, cur) => acc + cur.coeff, 0)
+                    const value = points.reduce((acc, cur) => acc + (cur.value * cur.coeff), 0) / total_coeffs
+                    arr_Up[i] = Math.floor(value)
+                }
+                return arr_Up
+            }
+        function resize(matrix) {
+            let y_factor = matrix.length / 28
+            let x_factor = matrix[0].length / 28
+            let blank = Array.from({ length: 28 }).map(_ => Array.from({ length: 28 }))
+            for (let i = 0; i < 28; i++)
+                for (let j = 0; j < 28; j++) {
+                    let sum = 0;
+                    for (let k = 0; k < y_factor; k++) {
+                        for (let l = 0; l < x_factor; l++) {
+                            sum += matrix[i * y_factor + k][j * x_factor + l];
+                        }
+                    }
+                    blank[i][j] = Math.floor(sum / (x_factor * y_factor));
+                }
+            return blank;
+        }
+        function pad(matrix, width, height, filler = 0) {
+            //  matrix[height][width]
+            const actual_height = matrix.length
+            const actual_width = matrix[0].length
+
+            const height_offset = (height - actual_height) / 2
+            const width_offset = (width - actual_width) / 2
+
+            matrix.splice(0, 0,
+                ...Array
+                    .from({ length: Math.floor(height_offset) })
+                    .map(_ => new Array(actual_width).fill(filler))
+            )
+            matrix.splice(matrix.lengt - 1, 0,
+                ...Array
+                    .from({ length: Math.ceil(height_offset) })
+                    .map(_ => new Array(actual_width).fill(filler))
+            )
+            matrix.forEach(m => {
+                m.splice(0, 0, ...new Array(Math.ceil(width_offset)).fill(filler))
+                m.splice(m.length - 1, 0, ...new Array(Math.floor(width_offset)).fill(filler))
+            })
+
+            return matrix
+        }
+        function crop(matrix) {
+            while (matrix[0].every(z => z == 0)) {
+                matrix.splice(0, 1)
+            }
+            while (matrix.at(-1).every(z => z == 0)) {
+                matrix.splice(matrix.length - 1, 1)
+            }
+            while (matrix.every(m => m[0] == 0)) {
+                matrix.forEach(a => a.splice(0, 1))
+            }
+            while (matrix.every(m => m.at(-1) == 0)) {
+                matrix.forEach(a => a.splice(a.length - 1, 1))
+            }
+            return matrix
+        }
+
+        function capture() {
+            const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height)
+            const matrix = chunks([...data].filter((_, i) => i % 4 === 3), size)
+            return matrix
+        }
+
+        function clear() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height)
+        }
+        trash.onclick = clear
+        button.onclick = async function () {
+            button.textContent = 'Processing...'
+            button.classList.add('loading')
+            let img = crop(capture())
+            const image = resize(pad(img, Math.ceil(img[0].length / 28) * 28, Math.ceil(img.length / 28) * 28, 0))
+            .map(a => a.map(b=>b.toString(16).padStart(2, '0'))).flat().join('')
+            /*console.log(img, low_data, 28 / img[0].length, 28 / img.length)
+            let image = linear_interpolation(img, 28 / img[0].length, 28 / img.length)// resize(pad(img, Math.ceil(img[0].length / 28) * 28, Math.ceil(img.length / 28) * 28, 0))
+            console.log(image, image.length)
+            image = image.map(a => a.toString(16).padStart(2, '0')).join('')*/
+            const res = await fetch('/', {
+                method: 'POST',
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ image })
+            })
+
+            if (!res.ok) console.error(res) || alert('Error, check dev tools');
+            else alert((await res.json()).result)
+            button.classList.remove('loading')
+            button.textContent = 'Analyse'
+
+        }
+        console.log(low_data.length)
+        function test_linear() {
+            const arr = new Uint8ClampedArray(low_data.flatMap(b => b.flatMap(a => [0, 0, 0, a])))
+            const _image = new ImageData(arr, 28, 28)
+            ctx.putImageData(_image, 0, 0)
+            const up_factor_x = 28 / low_data[0].length
+            const up_factor_y = 28 / low_data.length
+            console.log('factors',up_factor_x, up_factor_y)
+            const A = linear_interpolation(low_data, up_factor_x, up_factor_y)
+            const up_scaled = new ImageData(new Uint8ClampedArray(A.flatMap(a=>[0,0,0,a])), 28 * up_factor_x, 28 * up_factor_y)
+            ctx.putImageData(up_scaled, 28, 28)
+        }
+        test_linear()
+    }
+
+</script>
+<style>
+    :root {
+        --blue: #1af0ff;
+    }
+
+    html {
+        overflow: hidden;
+    }
+
+    body {
+        height: 100vh;
+        width: 100vw;
+        margin: 0;
+        box-sizing: border-box;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Roboto', sans-serif;
+    }
+
+    main {
+        width: min-content;
+        height: min-content;
+        box-sizing: border-box;
+        padding: 32px 40px;
+        border: 1px solid black;
+        border-radius: 12px;
+    }
+
+    h2 {
+        font-size: 32px;
+        margin: 0 0 32px;
+        text-align: center;
+    }
+
+    canvas {
+        width: 300px;
+        height: 300px;
+        border: 1px solid black;
+        background-color: rgb(238, 238, 238);
+        margin-bottom: 24px;
+    }
+
+    .buttons {
+        display: flex;
+        width: 100%;
+    }
+
+    button {
+        border-radius: 5px;
+        border: none;
+        background-color: lightgray;
+        color: black;
+        font-family: 'Roboto', sans-serif;
+        width: 100%;
+        height: 40px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+
+    button:not(:first-child) {
+        width: min-content;
+        margin-left: 12px;
+        padding: 0 4px;
+        aspect-ratio: 1;
+    }
+
+    button:active {
+        background-color: rgb(241, 241, 241);
+    }
+
+    @keyframes reflet {
+        0% {
+            background-position-x: 0%;
+        }
+
+        60%,
+        100% {
+            background-position-x: 100%;
+        }
+    }
+
+    .loading {
+        box-shadow: 0 10px 30px rgba(0, 202, 253, 0.2);
+        background-image: linear-gradient(135deg,
+                var(--blue),
+                var(--blue) 33%,
+                #9aeefd,
+                var(--blue) 66%);
+        background-size: 350% 100%;
+        animation: reflet 5s infinite linear;
+        color: white;
+        font-weight: 600;
+    }
+</style>
+
+</html>

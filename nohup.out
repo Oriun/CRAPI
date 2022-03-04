@@ -1,0 +1,22 @@
+Thu, 03 Mar 2022 10:26:19 GMT body-parser deprecated bodyParser: use individual json/urlencoded middlewares at index.js:32:9
+Thu, 03 Mar 2022 10:26:19 GMT body-parser deprecated undefined extended: provide extended option at node_modules/body-parser/index.js:105:29
+Example app listening on port 3000
+Starting
+
+Ready
+
+5 : 32248
+5 : 38029
+1 : 38378
+5 : 41313
+6 : 41416
+6 : 41698
+6 : 42194
+1 : 42452
+6 : 42566
+5 : 42589
+5 : 43095
+6 : 43119
+
+Result : 5
+
